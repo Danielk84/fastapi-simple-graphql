@@ -4,7 +4,7 @@ from pymongo import AsyncMongoClient
 from pydantic import BaseModel
 
 from app.config import settings
-from app.database.models import User
+from app.database import models
 
 client = AsyncMongoClient(
     str(settings.mongo_dsn),
@@ -16,7 +16,10 @@ _db_name = "test_database" if settings.DEBUG else "main_line"
 db = client.get_database(_db_name)
 
 
-base_models = { "users": User, }
+base_models = {
+    "users": models.User,
+    "articles": models.Article,
+}
 
 base_schema = {
     "collMod": "",
