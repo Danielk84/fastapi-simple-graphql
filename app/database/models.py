@@ -97,6 +97,15 @@ class BaseAuthor(BaseModel):
 
 
 class BaseDate(BaseModel):
+    pub_date: Annotated[
+        datetime,
+        WithJsonSchema(
+            {
+                "title": "pub_date",
+                "type": "string",
+            }
+        )
+    ] = Field(default_factory=datetime.now)
     mod_date: Annotated[
         datetime,
         WithJsonSchema(
@@ -118,20 +127,11 @@ class Article(
         json_schema_extra = {
             "indexes": [
                 IndexModel([("title", 1)], unique=True),
-                IndexModel([("pub_date", 1), ("author", 1)]),
+                IndexModel([("pub_date", 1), ("mod_date", 1), ("author", 1)]),
             ],
         },
     )
 
-    pub_date: Annotated[
-        datetime,
-        WithJsonSchema(
-            {
-                "title": "pub_date",
-                "type": "string",
-            }
-        )
-    ] = Field(default_factory=datetime.now)
     body: str | None = Field(default=None)
     summary: str | None = Field(default=None)
 
@@ -147,3 +147,34 @@ class ArticleInfo(
 
 class ArticleList():
     root: list[ArticleInfo]
+
+
+class Book(
+    BaseTitle,
+    BaseAuthor,
+    BaseDate,
+):
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra = {
+            "indexes": [
+                IndexModel([
+                    ("title", 1), ("pub_date", 1), ("mod_date", 1), ("author", 1),
+                ]),
+            ],
+        },
+    )
+
+    intro: str | None = Field(default=None)
+
+
+class BookInfo(
+    BaseTitle,
+    BaseAuthor,
+    BaseDate,
+):
+    pass
+
+
+class BookList(BaseModel):
+    root: list[BookInfo]
