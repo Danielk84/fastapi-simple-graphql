@@ -12,7 +12,9 @@ client = AsyncMongoClient(
     minPoolSize=2,
 )
 
-db = client["test_database"] if settings.DEBUG else client["main_line"]
+_db_name = "test_database" if settings.DEBUG else "main_line"
+db = client.get_database(_db_name)
+
 
 base_models = { "users": User, }
 
@@ -49,20 +51,20 @@ async def create_schema(name: str, model: BaseModel) -> tuple[dict, dict]:
 
 
 async def run_db_setup() -> None:
+    existing_collections = await db.list_collection_names()
+
     for name, model in base_models.items():
         schema, model_schema = await create_schema(name, model)
 
         try:
+            if name not in existing_collections:
+                await db.create_collection(name=name)
+
             await db.command(schema)
             if "indexes" in model_schema:
                 await db.get_collection(name).create_indexes(
                     model_schema["indexes"]
                 )
         except Exception as e:
+            print(f"{name} : {e}")
             raise e
-
-
-#  Collections
-users = db["users"]
-articles = db["articles"]
-books = db["books"]

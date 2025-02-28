@@ -2,7 +2,6 @@ import bcrypt
 import jwt
 
 from app.config import settings
-from app.database.db import users
 from app.database.models import UserLogin
 
 async def password_hasher(passwd: str) -> bytes:
@@ -13,4 +12,4 @@ async def password_hasher(passwd: str) -> bytes:
 
 
 async def authenticate(login: UserLogin):
-    user = users.find_one()
+    pass
