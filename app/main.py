@@ -7,7 +7,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 
 from app.config import settings
 from app.database.db import client, run_db_setup
-
+from app.schema import graphql_app
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,6 +33,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=800, compresslevel=5)
+
+
+app.include_router(graphql_app, prefix="/graphql")
+
 
 if __name__ == "__main__":
     uvicorn.run(app)
