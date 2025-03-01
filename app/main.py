@@ -9,6 +9,7 @@ from app.config import settings
 from app.database.db import client, run_db_setup
 from app.schema import graphql_app
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await run_db_setup()

@@ -8,11 +8,13 @@ from bson import ObjectId
 
 
 class BaseID(BaseModel):
-    _id: Annotated[
-        ObjectId,
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    id: Annotated[
+        str,
         WithJsonSchema(
             {
-                "title": "_id",
+                "title": "id",
                 "type": "oid",
             }
         )

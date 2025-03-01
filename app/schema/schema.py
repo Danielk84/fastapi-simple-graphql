@@ -1,4 +1,5 @@
 import strawberry as sb
+from strawberry.tools import merge_types
 from strawberry.fastapi import GraphQLRouter
 
 from . import articles
@@ -6,21 +7,23 @@ from . import books
 from . import users
 
 
-@sb.type
-class Query():
-    pass
+Query = merge_types(
+    "Query",
+    (
+        articles.Query,
+    )
+)
+"""
+Mutation = merge_types(
+    "Mutation",
+    ()
+)
 
-
-@sb.type
-class Mutation():
-    pass
-
-
-@sb.type
-class Subscription():
-    pass
-
-
-schema = sb.Schema(query=Query, mutation=Mutation, subscription=Subscription)
+Subscription = merge_types(
+    "Subscription",
+    ()
+)
+"""
+schema = sb.Schema(query=Query, )# mutation=Mutation, subscription=Subscription)
 
 graphql_app = GraphQLRouter(schema=schema)
