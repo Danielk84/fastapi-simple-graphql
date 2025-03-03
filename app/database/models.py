@@ -7,7 +7,7 @@ from pymongo import IndexModel
 from bson import ObjectId
 
 
-class BaseID(BaseModel):
+class BaseID:
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     id: Annotated[
@@ -21,22 +21,23 @@ class BaseID(BaseModel):
     ] = Field(alias="_id")
 
 
-class BaseUsername(BaseModel):
+class BaseUsername:
     username: str = Field(min_length=4 , max_length=32)
 
 
-class BasePassword(BaseModel):
+class BasePassword:
     password: str = Field(min_length=8, max_length=32)
 
 
 class UserLogin(
+    BaseModel,
     BaseUsername,
     BasePassword,
 ):
     model_config = ConfigDict(extra='forbid')
 
 
-class BaseUserInfo(BaseModel):
+class BaseUserInfo:
     f_name: str | None = Field(default=None, max_length=32)
     l_name: str | None = Field(default=None, max_length=32)
 
@@ -48,6 +49,7 @@ class UserPermission(Enum):
 
 
 class UserInfo(
+    BaseModel,
     BaseID,
     BaseUsername,
     BaseUserInfo,
@@ -56,6 +58,7 @@ class UserInfo(
 
 
 class User(
+    BaseModel,
     BaseUsername,
     BaseUserInfo,
 ):
@@ -90,15 +93,15 @@ class User(
     ] = Field(default=UserPermission.guest)
 
 
-class BaseTitle(BaseModel):
+class BaseTitle:
     title: str = Field(max_length=64)
 
 
-class BaseAuthor(BaseModel):
+class BaseAuthor:
     author: str = Field(min_length=4, max_length=32)
 
 
-class BaseDate(BaseModel):
+class BaseDate:
     pub_date: Annotated[
         datetime,
         WithJsonSchema(
@@ -120,6 +123,7 @@ class BaseDate(BaseModel):
 
 
 class Article(
+    BaseModel,
     BaseTitle,
     BaseAuthor,
     BaseDate,
@@ -139,6 +143,7 @@ class Article(
 
 
 class ArticleInfo(
+    BaseModel,
     BaseID,
     BaseTitle,
     BaseAuthor,
@@ -147,11 +152,12 @@ class ArticleInfo(
     pass
 
 
-class ArticleList(BaseDate):
+class ArticleList(BaseModel):
     root: list[ArticleInfo]
 
 
 class Book(
+    BaseModel,
     BaseTitle,
     BaseAuthor,
     BaseDate,
@@ -171,6 +177,7 @@ class Book(
 
 
 class BookInfo(
+    BaseModel,
     BaseTitle,
     BaseAuthor,
     BaseDate,
