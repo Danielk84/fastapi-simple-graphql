@@ -69,6 +69,5 @@ async def run_db_setup() -> None:
                 await db.get_collection(name).create_indexes(
                     model_schema["indexes"]
                 )
-        except Exception as e:
-            print(f"{name} : {e}")
-            raise e
+        except Exception:
+            raise

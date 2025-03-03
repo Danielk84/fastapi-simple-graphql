@@ -1,27 +1,27 @@
 import orjson
 import strawberry as sb
 from bson import ObjectId
+from fastapi import status
 from pydantic import ValidationError
-from fastapi import HTTPException, status
-from pymongo.errors import DuplicateKeyError, PyMongoError
+from pymongo.errors import DuplicateKeyError
 
 from app.database.db import db
 from app.database.utils import find_one_or_404
-from app.database.models import (
-    Article,
-    ArticleList,
-)
+from app.database.models import Article, ArticleList
 from .depends import (
+    ResultStatus,
     ArticleType,
+    ArticleResult,
     ArticleInput,
     ArticleListType,
+    ArticleListResult,
 )
 
 
 @sb.type
 class Query:
     @sb.field
-    async def articles_list(self) -> ArticleListType:
+    async def articles_list(self) -> ArticleListResult:
         articles = ArticleList(
             root=await db["articles"].find(
             {}, {"_id": 1, "title": 1, "author": 1, "pub_date": 1, "mod_date": 1}
@@ -31,7 +31,7 @@ class Query:
 
 
     @sb.field
-    async def article(self, id: str) -> ArticleType:
+    async def article(self, id: str) -> ArticleResult:
         article = await find_one_or_404(
             filter={"_id": ObjectId(id)},
             collection=db.get_collection("articles"),
@@ -43,7 +43,7 @@ class Query:
 @sb.type
 class Mutation:
     @sb.field
-    async def create_article(self, input: ArticleInput) -> ArticleType:
+    async def create_article(self, input: ArticleInput) -> ArticleResult:
         try:
             article = input.to_pydantic()
 
@@ -54,15 +54,13 @@ class Mutation:
 
             return ArticleType.from_pydantic(article)
         except ValidationError:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+            return ResultStatus(status_code=status.HTTP_400_BAD_REQUEST)
         except DuplicateKeyError:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT)
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ResultStatus(status_code=status.HTTP_409_CONFLICT)
 
 
     @sb.field
-    async def update_article(self, id: str, input: ArticleInput) -> ArticleType:
+    async def update_article(self, id: str, input: ArticleInput) -> ArticleResult:
         try:
             article = input.to_pydantic()
 
@@ -75,17 +73,18 @@ class Mutation:
 
             return ArticleType.from_pydantic(article)
         except ValidationError:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
-        except PyMongoError:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ResultStatus(
+                message="Invalid fields.",
+                status_code=status.HTTP_400_BAD_REQUEST)
+        except AssertionError:
+            return ResultStatus(status_code=status.HTTP_404_NOT_FOUND)
 
 
     @sb.field
-    async def delete_article(self, id: str) -> bool:
+    async def delete_article(self, id: str) -> ResultStatus:
         try:
             deleted = await db["articles"].delete_one({"_id": ObjectId(id)})
-            return deleted.deleted_count == 1
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            assert deleted.deleted_count == 1
+            return ResultStatus(status_code=status.HTTP_204_NO_CONTENT)
+        except AssertionError:
+            return ResultStatus(status_code=status.HTTP_404_NOT_FOUND)

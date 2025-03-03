@@ -11,6 +11,12 @@ from app.database.models import (
 )
 
 
+@sb.type
+class ResultStatus:
+    message: str | None = None
+    status_code: int
+
+
 @sb.experimental.pydantic.type(model=Article)
 class ArticleType:
     title: sb.auto
@@ -19,6 +25,12 @@ class ArticleType:
     mod_date:sb.auto
     body: sb.auto
     summary: sb.auto
+
+
+ArticleResult = Annotated[
+    ArticleType | ResultStatus,
+    sb.union("ArticleResult"),
+]
 
 
 @sb.experimental.pydantic.input(model=Article)
@@ -43,6 +55,10 @@ class ArticleListType:
     root: sb.auto
 
 
+ArticleListResult = Annotated[
+    ArticleListType | ResultStatus,
+    sb.union("ArticleListResult"),
+]
 
 
 @sb.experimental.pydantic.input(model=UserLogin)
@@ -77,12 +93,7 @@ class LoginSuccess:
     token: str
 
 
-@sb.type
-class ErrorStatus:
-    message: str
-    status_code: int
-
-
 LoginResult = Annotated[
-    LoginSuccess | ErrorStatus, sb.union("LoginResult")
+    LoginSuccess | ResultStatus,
+    sb.union("LoginResult"),
 ]

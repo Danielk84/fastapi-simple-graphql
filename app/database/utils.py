@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
 from pydantic import BaseModel, ValidationError
-from fastapi import HTTPException, status
+from fastapi import status
 from bson import ObjectId
 
 from app.config import settings
@@ -27,29 +27,27 @@ async def create_user(
     permission: UserPermission = UserPermission.guest,
     f_name: str | None = None,
     l_name: str | None = None,
-) -> User:
+) -> User | None:
     passwd_hash = password_hasher(login.password)
 
-    user = User(
-        username=login.username,
-        passwd_hash=passwd_hash,
-        permission=permission,
-        f_name=f_name,
-        l_name=l_name,
-    )
-
     try:
+        user = User(
+            username=login.username,
+            passwd_hash=passwd_hash,
+            permission=permission,
+            f_name=f_name,
+            l_name=l_name,
+        )
+
         result = await db.users.insert_one(user.model_dump())
 
         assert isinstance(result.inserted_id, ObjectId)
         return user
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+    except (ValidationError, AssertionError):
+        return None
 
 
-async def create_token(user: User) -> str:
+async def create_token(user: User) -> str | None:
     try:
         token = jwt.encode(
             payload={
@@ -62,7 +60,9 @@ async def create_token(user: User) -> str:
         )
         return token
     except jwt.PyJWKError:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return None
+    except Exception:
+        raise
 
 
 async def find_one_or_404(filter: dict, collection, model: BaseModel):
@@ -72,62 +72,62 @@ async def find_one_or_404(filter: dict, collection, model: BaseModel):
         item = await collection.find(filter).next()
         item.pop("_id")
         return model(**item)
-    except ValidationError:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+    except AssertionError:
+        return None
     except Exception:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise
 
 
 async def authenticate(
     login: UserLogin,
     permission: UserPermission | None = None,
-) -> User:
-    user = await find_one_or_404(
-        filter={ "username": login.username },
-        collection=db.get_collection("users"),
-        model=User
-    )
+) -> User | None:
     try:
+        user = await find_one_or_404(
+            filter={ "username": login.username },
+            collection=db.get_collection("users"),
+            model=User
+        )
+        assert user is not None
         assert bcrypt.checkpw(
             password=login.password.encode,
             hashed_password=user.passwd_hash,
         )
+        if permission is not None:
+                assert user.permission == permission
+    except AssertionError:
+        return None
     except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-    if permission is not None:
-        try:
-            assert user.permission == permission
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        raise
 
     return user
 
 
-async def auth_token(token: str, permission: UserPermission | None = None):
+async def auth_token(
+    token: str,
+    permission: UserPermission | None = None
+) -> User | None:
     try:
         payload = jwt.decode(
             jwt=token,
             key=settings.SECRET_KEY,
             algorithms=[settings.TOKEN_ALGORITHM],
         )
+        user = find_one_or_404(
+            filter={ "username": payload["username"]},
+            collection=db.get_collection("users"),
+            model=User,
+        )  
+        assert user is not None
+        if permission is not None:
+            assert user.permission == permission
     except (
         jwt.InvalidTokenError,
-        jwt.ExpiredSignatureError,  
+        jwt.ExpiredSignatureError,
+        AssertionError,
     ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    except jwt.PyJWKError:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    user = find_one_or_404(
-        filter={ "username": payload["username"]},
-        collection=db.get_collection("users"),
-        model=User,
-    )  
-    if permission is not None:
-        try:
-            assert user.permission == permission
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        return None
+    except Exception:
+        raise
 
     return user
