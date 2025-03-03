@@ -10,7 +10,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
-    DEBUG: bool = True
+    DEBUG: bool = False
     ORIGINS: list = ["http://127.0.0.1:8000/",]
     mongo_dsn: MongoDsn = 'xxx'
 

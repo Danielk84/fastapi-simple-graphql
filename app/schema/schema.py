@@ -13,17 +13,19 @@ Query = merge_types(
         articles.Query,
     )
 )
-"""
+
 Mutation = merge_types(
     "Mutation",
-    ()
+    (
+        articles.Mutation,
+    )
 )
-
+"""
 Subscription = merge_types(
     "Subscription",
     ()
 )
 """
-schema = sb.Schema(query=Query, )# mutation=Mutation, subscription=Subscription)
+schema = sb.Schema(query=Query, mutation=Mutation,)# subscription=Subscription)
 
 graphql_app = GraphQLRouter(schema=schema)

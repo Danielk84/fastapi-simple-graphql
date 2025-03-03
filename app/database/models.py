@@ -11,14 +11,14 @@ class BaseID(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     id: Annotated[
-        str,
+        ObjectId,
         WithJsonSchema(
             {
                 "title": "id",
                 "type": "oid",
             }
         )
-    ]
+    ] = Field(alias="_id")
 
 
 class BaseUsername(BaseModel):
@@ -147,7 +147,7 @@ class ArticleInfo(
     pass
 
 
-class ArticleList():
+class ArticleList(BaseDate):
     root: list[ArticleInfo]
 
 

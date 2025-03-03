@@ -2,9 +2,9 @@ from datetime import datetime, timezone, timedelta
 
 import bcrypt
 import jwt
+from pydantic import BaseModel, ValidationError
 from fastapi import HTTPException, status
 from bson import ObjectId
-from pydantic import BaseModel
 
 from app.config import settings
 from app.database.db import db
@@ -33,6 +33,7 @@ async def create_user(
     user = User(
         username=login.username,
         passwd_hash=passwd_hash,
+        permission=permission,
         f_name=f_name,
         l_name=l_name,
     )
@@ -45,7 +46,6 @@ async def create_user(
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Try creating user again."
         )
 
 
@@ -69,12 +69,13 @@ async def find_one_or_404(filter: dict, collection, model: BaseModel):
     try:
         assert await collection.count_documents(filter) == 1
 
-        item = await collection.find(filter).anext()
+        item = await collection.find(filter).next()
+        item.pop("_id")
         return model(**item)
+    except ValidationError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT)
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
 async def authenticate(
