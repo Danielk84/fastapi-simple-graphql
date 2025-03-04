@@ -76,6 +76,12 @@ class UserInfoType:
     permission: sb.auto
 
 
+UserInfoResult = Annotated[
+    UserInfoType | ResultStatus,
+    sb.union("UserInfoResult")
+]
+
+
 @sb.experimental.pydantic.input(model=UserInfo)
 class UserInfoInput:
     username: sb.auto

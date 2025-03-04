@@ -2,8 +2,8 @@ from datetime import datetime, timezone, timedelta
 
 import bcrypt
 import jwt
+import orjson
 from pydantic import BaseModel, ValidationError
-from fastapi import status
 from bson import ObjectId
 
 from app.config import settings
@@ -28,7 +28,7 @@ async def create_user(
     f_name: str | None = None,
     l_name: str | None = None,
 ) -> User | None:
-    passwd_hash = password_hasher(login.password)
+    passwd_hash = await password_hasher(login.password)
 
     try:
         user = User(
@@ -39,7 +39,7 @@ async def create_user(
             l_name=l_name,
         )
 
-        result = await db.users.insert_one(user.model_dump())
+        result = await db.users.insert_one(orjson.loads(user.model_dump_json()))
 
         assert isinstance(result.inserted_id, ObjectId)
         return user
@@ -90,17 +90,17 @@ async def authenticate(
         )
         assert user is not None
         assert bcrypt.checkpw(
-            password=login.password.encode,
+            password=login.password.encode(),
             hashed_password=user.passwd_hash,
         )
         if permission is not None:
-                assert user.permission == permission
+            assert user.permission is permission
+
+        return user
     except AssertionError:
         return None
     except Exception:
         raise
-
-    return user
 
 
 async def auth_token(

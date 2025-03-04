@@ -18,6 +18,7 @@ Mutation = merge_types(
     "Mutation",
     (
         articles.Mutation,
+        users.Mutation,
     )
 )
 """

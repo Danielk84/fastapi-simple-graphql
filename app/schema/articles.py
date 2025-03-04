@@ -22,23 +22,29 @@ from .depends import (
 class Query:
     @sb.field
     async def articles_list(self) -> ArticleListResult:
-        articles = ArticleList(
-            root=await db["articles"].find(
-            {}, {"_id": 1, "title": 1, "author": 1, "pub_date": 1, "mod_date": 1}
-            ).to_list()
-        )
-        return ArticleListType.from_pydantic(articles)
+        try:
+            articles = ArticleList(
+                root=await db["articles"].find(
+                {}, {"_id": 1, "title": 1, "author": 1, "pub_date": 1, "mod_date": 1}
+                ).to_list()
+            )
+            return ArticleListType.from_pydantic(articles)
+        except Exception:
+            return ResultStatus(status_code=status.HTTP_404_NOT_FOUND)
 
 
     @sb.field
     async def article(self, id: str) -> ArticleResult:
-        article = await find_one_or_404(
-            filter={"_id": ObjectId(id)},
-            collection=db.get_collection("articles"),
-            model=Article
-        )
-        return ArticleType.from_pydantic(article)
-
+        try:
+            article = await find_one_or_404(
+                filter={"_id": ObjectId(id)},
+                collection=db.get_collection("articles"),
+                model=Article
+            )
+            assert article is not None
+            return ArticleType.from_pydantic(article)
+        except AssertionError:
+            return ResultStatus(status_code=status.HTTP_404_NOT_FOUND)
 
 @sb.type
 class Mutation:
