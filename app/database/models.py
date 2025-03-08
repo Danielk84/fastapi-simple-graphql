@@ -11,14 +11,14 @@ class BaseID:
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     id: Annotated[
-        ObjectId,
+        ObjectId | None,
         WithJsonSchema(
             {
                 "title": "id",
                 "type": "oid",
             }
         )
-    ] = Field(alias="_id")
+    ] = Field(default=None, alias="_id")
 
 
 class BaseUsername:
@@ -54,7 +54,11 @@ class UserInfo(
     BaseUsername,
     BaseUserInfo,
 ):
-    permission: UserPermission
+    permission: UserPermission | None = Field(default=None)
+
+
+class UserList(BaseModel):
+    root: list[UserInfo]
 
 
 class User(
@@ -154,36 +158,3 @@ class ArticleInfo(
 
 class ArticleList(BaseModel):
     root: list[ArticleInfo]
-
-
-class Book(
-    BaseModel,
-    BaseTitle,
-    BaseAuthor,
-    BaseDate,
-):
-    model_config = ConfigDict(
-        extra="forbid",
-        json_schema_extra = {
-            "indexes": [
-                IndexModel([
-                    ("title", 1), ("pub_date", 1), ("mod_date", 1), ("author", 1),
-                ]),
-            ],
-        },
-    )
-
-    intro: str | None = Field(default=None)
-
-
-class BookInfo(
-    BaseModel,
-    BaseTitle,
-    BaseAuthor,
-    BaseDate,
-):
-    pass
-
-
-class BookList(BaseModel):
-    root: list[BookInfo]

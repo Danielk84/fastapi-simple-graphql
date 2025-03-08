@@ -113,7 +113,7 @@ async def auth_token(
             key=settings.SECRET_KEY,
             algorithms=[settings.TOKEN_ALGORITHM],
         )
-        user = find_one_or_404(
+        user = await find_one_or_404(
             filter={ "username": payload["username"]},
             collection=db.get_collection("users"),
             model=User,
@@ -121,6 +121,8 @@ async def auth_token(
         assert user is not None
         if permission is not None:
             assert user.permission == permission
+
+        return user
     except (
         jwt.InvalidTokenError,
         jwt.ExpiredSignatureError,
@@ -129,5 +131,3 @@ async def auth_token(
         return None
     except Exception:
         raise
-
-    return user

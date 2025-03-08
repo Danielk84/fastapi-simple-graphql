@@ -5,7 +5,7 @@ from strawberry.fastapi import GraphQLRouter
 from . import articles
 from . import books
 from . import users
-
+from . import depends
 
 Query = merge_types(
     "Query",
@@ -29,4 +29,7 @@ Subscription = merge_types(
 """
 schema = sb.Schema(query=Query, mutation=Mutation,)# subscription=Subscription)
 
-graphql_app = GraphQLRouter(schema=schema)
+graphql_app = GraphQLRouter(
+    schema=schema,
+    context_getter=depends.get_context,
+)

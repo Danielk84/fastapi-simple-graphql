@@ -19,7 +19,6 @@ db = client.get_database(_db_name)
 base_models = {
     "users": models.User,
     "articles": models.Article,
-    "books": models.Book,
 }
 
 base_schema = {
