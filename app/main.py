@@ -30,7 +30,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["HEAD", "GET", "POST"],
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=800, compresslevel=5)
